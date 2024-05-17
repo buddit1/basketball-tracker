@@ -44,6 +44,9 @@ def main(args):
     if not cap.isOpened():
         raise OSError(f"Could not open video source: {video_source}")
     
+    #setup encoding params
+    encode_params = [int(cv.IMWRITE_JPEG_QUALITY), args.jpeg_quality]
+    
     new_shape = None
     while cap.isOpened():
         ret, frame = cap.read()
@@ -54,7 +57,7 @@ def main(args):
         frame = cv.resize(frame, new_shape)
 
         # Serialize the frame
-        success, image_bytes = cv.imencode('.jpg', frame)
+        success, image_bytes = cv.imencode('.jpg', frame, encode_params)
         if not success:
             raise RuntimeError("Failed to encode frame to jpg format")
         image_bytes = image_bytes.tobytes()
@@ -76,5 +79,6 @@ if __name__ == "__main__":
     parser.add_argument("-backend-ip", type=str, help='IP adress for backend service.')
     parser.add_argument("-port", type=int, help='backend port to send data to.')
     parser.add_argument("--file", type=str, help='optional argument to read video from a file instead of webcam.')
+    parser.add_argument("--jpeg-quality", type=int, default=95, help="jpg quality parameter used by opencv. Must be between 0 and 100. Default=95.")
     args = parser.parse_args()
     main(args)
