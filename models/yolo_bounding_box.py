@@ -12,7 +12,7 @@ class YOLOBasketballBB():
         self.model.fuse()
         self.device = device
 
-    def __call__(self, frame, *args, **kwargs):
+    def __call__(self, frame):
         preds = self.model.predict(frame, device=self.device, classes=[32], verbose=False, half=True)
         ball_idxs = torch.argwhere(preds[0].boxes.cls == 32)
         ball_xyxy = preds[0].boxes.xyxy[ball_idxs].cpu() if len(ball_idxs) != 0 else None
