@@ -55,15 +55,10 @@ def main(args):
                 point0 = (int(ball_xyxy[0,0, 0]), int(ball_xyxy[0, 0, 1]))
                 point1 = (int(ball_xyxy[0,0, 2]), int(ball_xyxy[0, 0, 3]))
                 center = ((point0[0] + point1[0]) // 2, (point0[1] + point1[1]) // 2)
-                circles = np.array([[[center[0], center[1], 10]]])
-                circles = np.uint16(np.around(circles))
-                for i in circles[0, :]:
-                    center = (i[0], i[1])
-                    radius = i[2]
             else:
                 missing_frames += 1
             if missing_frames <= 5:
-                cv.circle(frame, center, radius, (255, 0, 255), -3)
+                cv.circle(frame, center, 10, (255, 0, 255), -3)
                 cv.rectangle(frame, point0, point1, color=(0,0,255), thickness=2)
             cv.imshow('Receiving...', frame)
             if cv.waitKey(24) & 0xFF == ord('q'):
