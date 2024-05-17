@@ -1,9 +1,8 @@
 import cv2 as cv
 import socket
 import struct
-import pickle
 import numpy as np
-import base64
+
 
 
 
