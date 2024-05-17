@@ -41,17 +41,8 @@ def main():
             data = data[msg_size:]
 
             # Deserialize the frame
-            # frame = pickle.loads(frame_data)
-            # print(type(frame))
-            # break
-            # jpg_original = base64.b64decode(frame_data)
             jpg_as_np = np.frombuffer(frame_data, dtype=np.uint8)
-            # print(jpg_as_np.shape)
             img = cv.imdecode(jpg_as_np, flags=1)
-            # print(img.shape)
-            # break
-            # frame = cv.imdecode(frame,  cv.IMREAD_COLOR)
-            # Process the frame (you can add your analysis here)
             cv.imshow('Receiving...', img)
             if cv.waitKey(24) & 0xFF == ord('q'):
                 break
