@@ -2,9 +2,10 @@ from ultralytics import YOLO
 import torch
 import numpy as np
 
-SUPPORTED_MODELS = [
-    'yolov9c'
-]
+
+
+
+
 class YOLOBasketballBB():
     def __init__(self, base_model, device='cpu'):
         self.model = YOLO(base_model + '.pt')
