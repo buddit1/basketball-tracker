@@ -20,17 +20,43 @@ def main(args):
     server_socket.listen(5)
 
     model = models.YOLOBasketballBB(args.model, device='cuda:0')
-    missing_frames = 10
+    missing_frames = args.missing_frames_threshold
+
+    if args.denoise_method == 'richardson-lucy':
+        psf = np.ones((args.denoise_kernel_size, args.denoise_kernel_size, 1)) / args.denoise_kernel_size**2
+
 
     print("Listening at", socket_address)
+    points = []
 
+    frames_w_ball = 0
     # Accept a client connection
     while True:
         client_socket, addr = server_socket.accept()
         print('Connection from:', addr)
         data = b""
         payload_size = struct.calcsize("Q")
+
+        start = time.time()
+        n_frames = 0
+        model_warm = False
         while True:
+            #warm up model for input shape before receiving real data
+            if not model_warm:
+                packet = client_socket.recv(1024)
+                if not packet: 
+                    break
+                #get shape from client program to warm up model
+                shape_size = struct.unpack("Q", packet[:payload_size])[0]
+                shape_data = packet[payload_size:payload_size + shape_size]
+                frame_shape = np.frombuffer(shape_data, dtype=np.int32)
+                fake_data = np.random.rand(*frame_shape, 3)
+                model(fake_data)
+                #send data back to client to say that model is warmed up
+                client_socket.sendall(b'1')
+                model_warm = True
+
+            #receive real data
             while len(data) < payload_size:
                 packet = client_socket.recv(4*1024)  # 4K
                 if not packet: break
