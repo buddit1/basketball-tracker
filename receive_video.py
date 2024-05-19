@@ -54,7 +54,7 @@ def main(args):
                 shape_data = packet[payload_size:payload_size + shape_size]
                 frame_shape = np.frombuffer(shape_data, dtype=np.int32)
                 fake_data = np.random.rand(*frame_shape, 3)
-                model(fake_data)
+                model.predict(fake_data, imgsz=frame_shape.tolist())
                 #send data back to client to say that model is warmed up
                 client_socket.sendall(b'1')
                 model_warm = True
