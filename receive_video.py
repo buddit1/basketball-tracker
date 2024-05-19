@@ -78,7 +78,7 @@ def main(args):
             jpg_as_np = np.frombuffer(frame_data, dtype=np.uint8)
             frame = cv.imdecode(jpg_as_np, flags=cv.IMREAD_COLOR)
 
-            ball_centers = model.find_ball_centers(frame)
+            ball_centers = model.find_ball_centers(frame, imgsz=frame.shape[0:2])
 
             if ball_centers is not None:
                 frames_w_ball += 1

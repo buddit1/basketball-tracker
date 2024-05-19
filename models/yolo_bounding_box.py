@@ -11,8 +11,8 @@ class YOLOBasketballBB():
         self.model.fuse()
         self.device = device
 
-    def find_ball_centers(self, frame):
-        preds = self.model.predict(frame, device=self.device, classes=[32], verbose=False, half=True)
+    def find_ball_centers(self, frame, **kwargs):
+        preds = self.model.predict(frame, device=self.device, classes=[32], verbose=False, half=True, **kwargs)
         ball_xyxys = preds[0].boxes.xyxy.cpu().numpy()
         centers = np.empty((ball_xyxys.shape[0], 2), dtype=np.int32) if len(ball_xyxys) else None
         if len(ball_xyxys) > 0:
@@ -20,5 +20,5 @@ class YOLOBasketballBB():
             centers[:,1] =  (ball_xyxys[:,1] + ball_xyxys[:,3]) // 2
         return centers
         
-    def predict(self, frame):
-        return self.model.predict(frame, device=self.device, classes=[32], verbose=False, half=True)
+    def predict(self, frame, **kwargs):
+        return self.model.predict(frame, device=self.device, classes=[32], verbose=False, half=True, **kwargs)
