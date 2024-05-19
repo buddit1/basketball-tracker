@@ -72,6 +72,9 @@ def main(args):
                 #send data back to client to say that model is warmed up
                 client_socket.sendall(b'1')
                 model_warm = True
+                if args.output is not None:
+                    writer = cv.VideoWriter(args.output, cv.VideoWriter_fourcc(*'MP4V'), 30, frame_shape)
+                start = time.time()
 
             #receive real data
             while len(data) < payload_size:
@@ -109,14 +112,23 @@ def main(args):
             if len(points) > 0:
                 draw_trajectory(frame, points)
 
-            cv.imshow('Receiving...', frame)
-            if cv.waitKey(24) & 0xFF == ord('q'):
-                break
+            if args.output is not None:
+                writer.write(frame)
+            if args.no_display != True:
+                cv.imshow('Receiving...', frame)
+                if cv.waitKey(10) & 0xFF == ord('q'):
+                    break
+
+            n_frames += 1
+
+        end = time.time()
+        print(f"processed {n_frames} frames in {end - start:.2f} seconds")
         client_socket.close()
         break
 
     server_socket.close()
     cv.destroyAllWindows()
+    print(f"detected ball in {frames_w_ball} out of {n_frames} frames")
 
 
 
@@ -137,5 +149,7 @@ if __name__ == "__main__":
     parser.add_argument('--denoise-kernel-size', type=int, help='kernel size for denoising filter. Default 5.', default=5)
     parser.add_argument('--weiner-noise', type=float, help="Noise parameter for Weiner filtering. Should be between 0 and 1. Default 0.1",
                         default=0.1)
+    parser.add_argument("--output", type=str, help="output file destination. Currently only tested with .mp4")
+    parser.add_argument("--no-display", action='store_true', help="Pass this flag to prevent displaying video.")
     args = parser.parse_args()
     main(args)
