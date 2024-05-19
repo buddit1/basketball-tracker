@@ -22,9 +22,19 @@ def richardson_lucy_denoise(frame, psf, iters):
 
 
 def draw_trajectory(frame, points):
-    for point in points[:,0:2]:
-        cv.circle(frame, point, radius=5, color=(248, 90, 252), thickness=-3)
-    return
+    interiors = np.zeros_like(frame, np.uint8)
+    perimeters = np.zeros_like(frame, np.uint8)
+    for point in points:
+        if point[-1] == 0:
+            cv.circle(perimeters, point[0:2], radius=point[2], color=(248, 90, 252), thickness=2)
+        cv.circle(interiors, point[0:2], radius=point[2], color=(248, 90, 252), thickness=-3)
+    interiors_alpha = 0.7
+    perimeters_alpha = 0.2
+    interiors_mask = interiors.astype(bool)
+    perimeters_mask = perimeters.astype(bool)
+    frame[interiors_mask] = cv.addWeighted(frame, interiors_alpha, interiors, 1 - interiors_alpha, 0)[interiors_mask]
+    frame[perimeters_mask] = cv.addWeighted(frame, perimeters_alpha, perimeters, 1 - perimeters_alpha, 0)[perimeters_mask]
+    return frame
 
 
 
@@ -44,7 +54,7 @@ def main(args):
 
 
     print("Listening at", socket_address)
-    points = np.empty((0, 3), dtype=np.int32) #store detection locations as (x, y, age)
+    points = np.empty((0, 4), dtype=np.int32) #store detection locations as (x, y, radius, age)
 
     frames_w_ball = 0
     # Accept a client connection
@@ -101,16 +111,16 @@ def main(args):
                 frame = scipy.signal.wiener(frame, (args.denoise_kernel_size, args.denoise_kernel_size, 1), args.weiner_noise)
                 frame = np.uint8(np.clip(frame, 0, 255))
 
-            ball_centers = model.find_ball_centers(frame, imgsz=frame.shape[0:2])
+            ball_centers = model.find_balls(frame, imgsz=frame.shape[0:2])
 
             if ball_centers is not None:
                 frames_w_ball += 1
                 ball_centers = np.concatenate([ball_centers, np.zeros((ball_centers.shape[0], 1), dtype=np.int32)], axis=-1)
                 points = np.concatenate([points, ball_centers])
-            points = points[points[:,-1] < args.trajectory_length]
-            points[:, -1] += 1
             if len(points) > 0:
                 draw_trajectory(frame, points)
+            points = points[points[:,-1] < args.trajectory_length]
+            points[:, -1] += 1
 
             if args.output is not None:
                 writer.write(frame)
