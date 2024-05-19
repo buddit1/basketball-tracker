@@ -3,8 +3,22 @@ import socket
 import struct
 import numpy as np
 import argparse
+import scipy
+import scipy.signal
+from skimage import restoration
+import skimage
+
 
 import models
+import time
+
+
+
+def richardson_lucy_denoise(frame, psf, iters):
+    frame = skimage.util.img_as_float(frame)
+    frame = restoration.richardson_lucy(frame, psf, num_iter=iters)
+    frame = np.uint8(np.clip(frame*255, 0, 255))
+    return frame
 
 
 def draw_trajectory(frame, points):
@@ -78,6 +92,12 @@ def main(args):
             jpg_as_np = np.frombuffer(frame_data, dtype=np.uint8)
             frame = cv.imdecode(jpg_as_np, flags=cv.IMREAD_COLOR)
 
+            if args.denoise_method == "richardson-lucy":
+                richardson_lucy_denoise(frame, psf, args.richardson_lucy_iters)
+            if args.denoise_method == "weiner":
+                frame = scipy.signal.wiener(frame, (args.denoise_kernel_size, args.denoise_kernel_size, 1), args.weiner_noise)
+                frame = np.uint8(np.clip(frame, 0, 255))
+
             ball_centers = model.find_ball_centers(frame, imgsz=frame.shape[0:2])
 
             if ball_centers is not None:
@@ -109,5 +129,13 @@ if __name__ == "__main__":
                         )
     parser.add_argument('--trajectory-length', type=int, help="""How long to keep displaying points displayed after initial
                         detection. Default 10""", default=10)
+    parser.add_argument('--denoise-method', type=str, help='method used to denoise image. Default None',
+                        choices=['None', 'weiner', 'richardson-lucy'])
+    parser.add_argument('--richardson-lucy-iters', type=int, help='number of iterations used for Richardson-Lucy deconvolution. Default 2.',
+                        default=2
+                        )
+    parser.add_argument('--denoise-kernel-size', type=int, help='kernel size for denoising filter. Default 5.', default=5)
+    parser.add_argument('--weiner-noise', type=float, help="Noise parameter for Weiner filtering. Should be between 0 and 1. Default 0.1",
+                        default=0.1)
     args = parser.parse_args()
     main(args)
