@@ -7,6 +7,10 @@ import argparse
 import models
 
 
+def draw_trajectory(frame, points):
+    for point in points[:,0:2]:
+        cv.circle(frame, point, radius=5, color=(248, 90, 252), thickness=-3)
+    return
 
 
 
@@ -20,14 +24,13 @@ def main(args):
     server_socket.listen(5)
 
     model = models.YOLOBasketballBB(args.model, device='cuda:0')
-    missing_frames = args.missing_frames_threshold
 
     if args.denoise_method == 'richardson-lucy':
         psf = np.ones((args.denoise_kernel_size, args.denoise_kernel_size, 1)) / args.denoise_kernel_size**2
 
 
     print("Listening at", socket_address)
-    points = []
+    points = np.empty((0, 3), dtype=np.int32) #store detection locations as (x, y, age)
 
     frames_w_ball = 0
     # Accept a client connection
@@ -74,18 +77,18 @@ def main(args):
             # Deserialize the frame
             jpg_as_np = np.frombuffer(frame_data, dtype=np.uint8)
             frame = cv.imdecode(jpg_as_np, flags=cv.IMREAD_COLOR)
-            ball_xyxy = model(frame)
 
-            if ball_xyxy != None:
-                missing_frames = 0
-                point0 = (int(ball_xyxy[0,0, 0]), int(ball_xyxy[0, 0, 1]))
-                point1 = (int(ball_xyxy[0,0, 2]), int(ball_xyxy[0, 0, 3]))
-                center = ((point0[0] + point1[0]) // 2, (point0[1] + point1[1]) // 2)
-            else:
-                missing_frames += 1
-            if missing_frames <= 5:
-                cv.circle(frame, center, 10, (255, 0, 255), -3)
-                cv.rectangle(frame, point0, point1, color=(0,0,255), thickness=2)
+            ball_centers = model.find_ball_centers(frame)
+
+            if ball_centers is not None:
+                frames_w_ball += 1
+                ball_centers = np.concatenate([ball_centers, np.zeros((ball_centers.shape[0], 1), dtype=np.int32)], axis=-1)
+                points = np.concatenate([points, ball_centers])
+            points = points[points[:,-1] < args.trajectory_length]
+            points[:, -1] += 1
+            if len(points) > 0:
+                draw_trajectory(frame, points)
+
             cv.imshow('Receiving...', frame)
             if cv.waitKey(24) & 0xFF == ord('q'):
                 break
@@ -104,5 +107,7 @@ if __name__ == "__main__":
     parser.add_argument('-model', type=str, help='yolo variant to use for tracking.',
                         choices=['yolov9c', 'yolov9e', 'yolov8n', 'yolov8s', 'yolov8m', 'yolov8l', 'yolov8x']
                         )
+    parser.add_argument('--trajectory-length', type=int, help="""How long to keep displaying points displayed after initial
+                        detection. Default 10""", default=10)
     args = parser.parse_args()
     main(args)

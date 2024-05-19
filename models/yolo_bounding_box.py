@@ -1,5 +1,4 @@
 from ultralytics import YOLO
-import torch
 import numpy as np
 
 
@@ -12,9 +11,14 @@ class YOLOBasketballBB():
         self.model.fuse()
         self.device = device
 
-    def __call__(self, frame):
+    def find_ball_centers(self, frame):
         preds = self.model.predict(frame, device=self.device, classes=[32], verbose=False, half=True)
-        ball_idxs = torch.argwhere(preds[0].boxes.cls == 32)
-        ball_xyxy = preds[0].boxes.xyxy[ball_idxs].cpu() if len(ball_idxs) != 0 else None
-        return ball_xyxy
+        ball_xyxys = preds[0].boxes.xyxy.cpu().numpy()
+        centers = np.empty((ball_xyxys.shape[0], 2), dtype=np.int32) if len(ball_xyxys) else None
+        if len(ball_xyxys) > 0:
+            centers[:,0] = (ball_xyxys[:,0] + ball_xyxys[:,2]) // 2
+            centers[:,1] =  (ball_xyxys[:,1] + ball_xyxys[:,3]) // 2
+        return centers
         
+    def predict(self, frame):
+        return self.model.predict(frame, device=self.device, classes=[32], verbose=False, half=True)
