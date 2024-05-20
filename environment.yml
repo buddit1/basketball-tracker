@@ -1,0 +1,18 @@
+name: basketball_tracker_env
+channels:
+  - conda-forge
+  - Microsoft
+  - defaults
+dependencies:
+  - opencv=4.9.0=qt6_py312hac6a15e_612
+  - pip=24.0=py312h06a4308_0
+  - python=3.12.3=hab00c5b_0_cpython
+  - numpy=1.26.4=py312heda63a1_0
+  - pip:
+    - requests==2.31.0
+    - scikit-image==0.23.2
+    - scipy==1.13.0
+    - torch==2.3.0
+    - torchaudio==2.3.0
+    - torchvision==0.18.0
+    - ultralytics==8.2.12
