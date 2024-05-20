@@ -227,7 +227,7 @@ The above usage will look for a webcam if available and stream video from it. To
 
 Currently detection is done with a pretrained yolo model by only using the class sports ball. This leads to false positives, particularly when bright green or yellow shoes are present in a frame. The model also has significantly worse performance when the ball is far away or moving rapidly. Finetuning the model on a basketball specific dataset would likely improve this.
 
-#### Failure Example
+#### Shoe False Positive Example
 ![Shoe False Positive Gif](./images/shoe_false_pos_video.gif)
 
 
